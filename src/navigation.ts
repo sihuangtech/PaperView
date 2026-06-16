@@ -29,8 +29,8 @@ export function goToPrevPage() {
 
 function flashBoundary() {
   const pageInfo = document.getElementById('page-info')!;
-  pageInfo.style.background = 'rgba(255, 60, 60, 0.5)';
+  pageInfo.style.background = 'var(--boundary-flash)';
   setTimeout(() => {
-    pageInfo.style.background = 'rgba(0, 0, 0, 0.75)';
+    pageInfo.style.background = '';
   }, 250);
 }
