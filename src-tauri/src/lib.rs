@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 #[tauri::command]
 fn get_cli_args() -> Vec<String> {
     std::env::args().collect()

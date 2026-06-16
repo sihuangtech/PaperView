@@ -16,7 +16,7 @@
     "fs:default",
     "fs:allow-read",
     "fs:allow-exists",
-    "fs:allow-metadata",
+    "fs:allow-stat",
     "store:default",
     "store:allow-get",
     "store:allow-set",
