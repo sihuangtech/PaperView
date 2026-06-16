@@ -13,7 +13,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
     target: 'esnext',
-    outDir: resolve(__dirname, 'src'),
+    outDir: 'dist',
     emptyOutDir: true,
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
