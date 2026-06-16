@@ -2,8 +2,12 @@ import { state } from './state';
 import { loadSettings } from './store';
 import { openFileDialog, loadFromCliArgs } from './pdf-loader';
 import { goToNextPage, goToPrevPage } from './navigation';
-import { dropZone, btnCover, showPageInfo, renderCurrentPages, toggleCoverMode } from './ui';
+import { dropZone, btnCover, btnClose, showPageInfo, renderCurrentPages, toggleCoverMode, closePdf } from './ui';
 import { clearPageCache } from './renderer';
+import { loadTheme, setTheme, saveTheme, initSystemThemeListener, Theme } from './theme';
+
+const btnTheme = document.getElementById('btn-theme')!;
+const themeMenu = document.getElementById('theme-menu')!;
 
 function initEventListeners() {
   dropZone.addEventListener('click', openFileDialog);
@@ -32,7 +36,7 @@ function initEventListeners() {
   document.addEventListener('click', (e) => {
     if (!state.pdf) return;
     const target = e.target as HTMLElement;
-    if (target.closest('#controls')) return;
+    if (target.closest('#controls') || target.closest('.theme-menu')) return;
 
     const x = e.clientX;
     const halfWidth = window.innerWidth / 2;
@@ -72,6 +76,31 @@ function initEventListeners() {
   }, { passive: true });
 
   btnCover.addEventListener('click', toggleCoverMode);
+  btnClose.addEventListener('click', closePdf);
+
+  btnTheme.addEventListener('click', (e) => {
+    e.stopPropagation();
+    themeMenu.classList.toggle('hidden');
+  });
+
+  themeMenu.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const theme = target.dataset.theme as Theme | undefined;
+    if (theme) {
+      setTheme(theme);
+      await saveTheme(theme);
+      themeMenu.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!themeMenu.classList.contains('hidden')) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('#btn-theme') && !target.closest('.theme-menu')) {
+        themeMenu.classList.add('hidden');
+      }
+    }
+  });
 
   document.addEventListener('mousemove', showPageInfo);
 
@@ -86,6 +115,8 @@ function initEventListeners() {
 async function init() {
   await loadSettings();
   btnCover.classList.toggle('active', state.coverMode);
+  await loadTheme();
+  initSystemThemeListener();
   initEventListeners();
   loadFromCliArgs();
 }

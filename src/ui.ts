@@ -9,6 +9,7 @@ export const pageInfo = document.getElementById('page-info')!;
 export const pageNum = document.getElementById('page-num')!;
 export const pageTotal = document.getElementById('page-total')!;
 export const btnCover = document.getElementById('btn-cover')!;
+export const btnClose = document.getElementById('btn-close')!;
 
 export function showPageInfo() {
   pageInfo.classList.remove('fade');
@@ -73,4 +74,15 @@ export async function toggleCoverMode() {
     state.currentPage = 1;
     await renderCurrentPages(false);
   }
+}
+
+export function closePdf() {
+  state.pdf = null;
+  state.totalPages = 0;
+  state.currentPage = 1;
+  state.pageCache.clear();
+  state.transitioning = false;
+  pagesContainer.innerHTML = '';
+  viewer.classList.add('hidden');
+  dropZone.classList.remove('hidden');
 }
