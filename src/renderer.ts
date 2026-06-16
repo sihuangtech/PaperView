@@ -14,12 +14,18 @@ export async function renderPage(pageNum: number): Promise<HTMLCanvasElement> {
   const scaleByWidth = (containerWidth / 2 - 8) / viewport.width;
   state.scale = Math.min(scaleByHeight, scaleByWidth);
 
+  const dpr = window.devicePixelRatio || 1;
   const scaledViewport = page.getViewport({ scale: state.scale });
+
   const canvas = document.createElement('canvas');
-  canvas.width = scaledViewport.width;
-  canvas.height = scaledViewport.height;
+  canvas.width = Math.floor(scaledViewport.width * dpr);
+  canvas.height = Math.floor(scaledViewport.height * dpr);
+  canvas.style.width = `${Math.floor(scaledViewport.width)}px`;
+  canvas.style.height = `${Math.floor(scaledViewport.height)}px`;
 
   const ctx = canvas.getContext('2d')!;
+  ctx.scale(dpr, dpr);
+
   await page.render({ canvas, canvasContext: ctx, viewport: scaledViewport }).promise;
 
   state.pageCache.set(pageNum, canvas);
