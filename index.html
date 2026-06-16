@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PaperView</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="drop-zone">
+      <div class="drop-content">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <polyline points="9 15 12 12 15 15"></polyline>
+        </svg>
+        <p>拖拽 PDF 文件到此处</p>
+        <p class="sub">或点击选择文件</p>
+      </div>
+    </div>
+    <div id="viewer" class="hidden">
+      <div id="pages-container"></div>
+      <div id="page-info">
+        <span id="page-num">1</span> / <span id="page-total">1</span>
+      </div>
+      <div id="controls">
+        <button id="btn-cover" title="封面模式">封面</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
