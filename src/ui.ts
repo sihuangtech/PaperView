@@ -27,11 +27,12 @@ export async function renderCurrentPages(animate: boolean = true) {
   const pairs = getPagePairs();
   const pairIndex = getCurrentPairIndex();
   const [leftPage, rightPage] = pairs[pairIndex];
+  const pagesInSpread = rightPage === null ? 1 : 2;
 
-  const leftCanvas = await renderPage(leftPage);
+  const leftCanvas = await renderPage(leftPage, pagesInSpread);
   let rightCanvas: HTMLCanvasElement | null = null;
   if (rightPage !== null) {
-    rightCanvas = await renderPage(rightPage);
+    rightCanvas = await renderPage(rightPage, pagesInSpread);
   }
 
   pagesContainer.innerHTML = '';

@@ -1,20 +1,23 @@
 import { state, getPagePairs } from './state';
 
-export async function renderPage(pageNum: number): Promise<HTMLCanvasElement> {
-  if (state.pageCache.has(pageNum)) {
-    return state.pageCache.get(pageNum)!;
+export async function renderPage(pageNum: number, pagesInSpread: 1 | 2): Promise<HTMLCanvasElement> {
+  const dpr = window.devicePixelRatio || 1;
+  const containerHeight = window.innerHeight - 32;
+  const containerWidth = window.innerWidth - 32;
+  const cacheKey = `${pageNum}:${pagesInSpread}:${containerWidth}:${containerHeight}:${dpr}`;
+
+  if (state.pageCache.has(cacheKey)) {
+    return state.pageCache.get(cacheKey)!;
   }
 
   const page = await state.pdf!.getPage(pageNum);
   const viewport = page.getViewport({ scale: 1 });
-  const containerHeight = window.innerHeight - 32;
-  const containerWidth = window.innerWidth - 32;
+  const widthForPage = pagesInSpread === 1 ? containerWidth : containerWidth / 2 - 8;
 
   const scaleByHeight = containerHeight / viewport.height;
-  const scaleByWidth = (containerWidth / 2 - 8) / viewport.width;
+  const scaleByWidth = widthForPage / viewport.width;
   state.scale = Math.min(scaleByHeight, scaleByWidth);
 
-  const dpr = window.devicePixelRatio || 1;
   const scaledViewport = page.getViewport({ scale: state.scale });
 
   const canvas = document.createElement('canvas');
@@ -28,7 +31,7 @@ export async function renderPage(pageNum: number): Promise<HTMLCanvasElement> {
 
   await page.render({ canvas, canvasContext: ctx, viewport: scaledViewport }).promise;
 
-  state.pageCache.set(pageNum, canvas);
+  state.pageCache.set(cacheKey, canvas);
   return canvas;
 }
 
@@ -42,8 +45,9 @@ export async function preloadNextPages(currentPairIndex: number) {
     const nextIndex = currentPairIndex + i;
     if (nextIndex < pairs.length) {
       const [left, right] = pairs[nextIndex];
-      renderPage(left).catch(() => {});
-      if (right) renderPage(right).catch(() => {});
+      const pagesInSpread = right ? 2 : 1;
+      renderPage(left, pagesInSpread).catch(() => {});
+      if (right) renderPage(right, pagesInSpread).catch(() => {});
     }
   }
 }

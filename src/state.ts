@@ -11,7 +11,7 @@ export interface AppState {
   totalPages: number;
   coverMode: boolean;
   scale: number;
-  pageCache: Map<number, HTMLCanvasElement>;
+  pageCache: Map<string, HTMLCanvasElement>;
   hideTimer: number | null;
   transitioning: boolean;
 }
