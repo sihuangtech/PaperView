@@ -1,6 +1,7 @@
 import { state, getPagePairs, getCurrentPairIndex } from './state';
 import { renderPage, preloadNextPages } from './renderer';
 import { saveCoverMode } from './store';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export const dropZone = document.getElementById('drop-zone')!;
 export const viewer = document.getElementById('viewer')!;
@@ -76,7 +77,7 @@ export async function toggleCoverMode() {
   }
 }
 
-export function closePdf() {
+export async function closePdf() {
   state.pdf = null;
   state.totalPages = 0;
   state.currentPage = 1;
@@ -85,4 +86,9 @@ export function closePdf() {
   pagesContainer.innerHTML = '';
   viewer.classList.add('hidden');
   dropZone.classList.remove('hidden');
+  try {
+    await getCurrentWindow().setFullscreen(false);
+  } catch (e) {
+    console.error('Failed to exit fullscreen:', e);
+  }
 }

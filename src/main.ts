@@ -1,10 +1,11 @@
 import { state } from './state';
 import { loadSettings } from './store';
-import { openFileDialog, loadFromCliArgs } from './pdf-loader';
+import { openFileDialog, loadFromCliArgs, loadPdfFromPath } from './pdf-loader';
 import { goToNextPage, goToPrevPage } from './navigation';
 import { dropZone, btnCover, btnClose, showPageInfo, renderCurrentPages, toggleCoverMode, closePdf } from './ui';
 import { clearPageCache } from './renderer';
-import { loadTheme, setTheme, saveTheme, initSystemThemeListener, Theme } from './theme';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { loadTheme, setTheme, saveTheme, initSystemThemeListener, Theme, updateThemeMenuState } from './theme';
 
 const btnTheme = document.getElementById('btn-theme')!;
 const themeMenu = document.getElementById('theme-menu')!;
@@ -24,6 +25,26 @@ function initEventListeners() {
   dropZone.addEventListener('drop', async (e) => {
     e.preventDefault();
     dropZone.classList.remove('dragover');
+  });
+
+  getCurrentWindow().onDragDropEvent(async ({ payload }) => {
+    if (payload.type === 'enter') {
+      dropZone.classList.add('dragover');
+      return;
+    }
+
+    if (payload.type === 'leave') {
+      dropZone.classList.remove('dragover');
+      return;
+    }
+
+    if (payload.type === 'drop') {
+      dropZone.classList.remove('dragover');
+      const pdfPath = payload.paths.find((path) => path.toLowerCase().endsWith('.pdf'));
+      if (pdfPath) {
+        await loadPdfFromPath(pdfPath);
+      }
+    }
   });
 
   document.addEventListener('contextmenu', (e) => {
@@ -48,6 +69,13 @@ function initEventListeners() {
   });
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      getCurrentWindow().setFullscreen(false).catch((error) => {
+        console.error('Failed to exit fullscreen:', error);
+      });
+      return;
+    }
+
     if (!state.pdf) return;
     switch (e.key) {
       case 'ArrowRight':
@@ -90,6 +118,7 @@ function initEventListeners() {
       setTheme(theme);
       await saveTheme(theme);
       themeMenu.classList.add('hidden');
+      updateThemeMenuState();
     }
   });
 
@@ -116,6 +145,7 @@ async function init() {
   await loadSettings();
   btnCover.classList.toggle('active', state.coverMode);
   await loadTheme();
+  updateThemeMenuState();
   initSystemThemeListener();
   initEventListeners();
   loadFromCliArgs();

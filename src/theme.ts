@@ -24,6 +24,7 @@ export function setTheme(theme: Theme) {
     applyTheme(theme);
   }
   updateThemeButton();
+  updateThemeMenuState();
 }
 
 export function getCurrentTheme(): Theme {
@@ -40,6 +41,12 @@ function updateThemeButton() {
     system: '系统',
   };
   btnTheme.textContent = labels[currentTheme];
+}
+
+export function updateThemeMenuState() {
+  document.querySelectorAll<HTMLButtonElement>('.theme-menu button[data-theme]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.theme === currentTheme);
+  });
 }
 
 export async function loadTheme() {
