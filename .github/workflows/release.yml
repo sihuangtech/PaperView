@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: universal-apple-darwin
+            args: --target universal-apple-darwin
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+          - platform: ubuntu-latest
+            target: linux-x64
+            args: ''
+          - platform: ubuntu-24.04-arm
+            target: linux-arm64
+            args: ''
+          - platform: windows-latest
+            target: windows-x64
+            args: ''
+          - platform: windows-11-arm
+            target: windows-arm64
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libssl-dev libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add macOS targets
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Generate release changelog
+        id: changelog
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            tag="${{ inputs.tag }}"
+          fi
+
+          previous_tag="$(git describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)"
+          if [[ -n "${previous_tag}" ]]; then
+            range="${previous_tag}..${tag}"
+          else
+            range="${tag}"
+          fi
+
+          changes=""
+          if [[ -f CHANGELOG.md ]]; then
+            changes="$(awk -v tag="${tag}" '
+              $0 == "## [" tag "]" || $0 ~ "^## \\[" tag "\\] - " || $0 == "## " tag {
+                in_section = 1
+                next
+              }
+              in_section && /^## / {
+                exit
+              }
+              in_section {
+                print
+              }
+            ' CHANGELOG.md)"
+          fi
+
+          if [[ -z "${changes}" ]]; then
+            changes="$(git log "${range}" --pretty=format:'- %s (%h)' --no-merges)"
+          fi
+
+          if [[ -z "${changes}" ]]; then
+            changes="- Maintenance release."
+          fi
+
+          {
+            echo 'body<<EOF'
+            echo "${changes}"
+            echo
+            echo '## Downloads'
+            echo
+            echo 'Choose the installer below for your operating system and CPU architecture.'
+            echo EOF
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+          tagName: "${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}"
+          releaseName: "PaperView ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}"
+          releaseBody: ${{ steps.changelog.outputs.body }}
+          releaseDraft: true
+          prerelease: false
